@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package json
+package selective_json_go
 
 import (
 	"strings"
@@ -35,4 +35,21 @@ func (o tagOptions) Contains(optionName string) bool {
 		}
 	}
 	return false
+}
+
+func (o tagOptions) Scenarios() []string {
+	if len(o) == 0 {
+		return []string{}
+	}
+	opts := strings.Split(string(o), ",")
+	for _, opt := range opts {
+		if strings.HasPrefix(opt, "scenarios:") {
+			_, scenarios, _ := strings.Cut(opt, ":")
+			if strings.TrimSpace(scenarios) == "" {
+				return []string{}
+			}
+			return strings.Split(scenarios, "|")
+		}
+	}
+	return []string{}
 }

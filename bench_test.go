@@ -8,13 +8,12 @@
 // We benchmark converting between the JSON form
 // and in-memory data structures.
 
-package json
+package selective_json_go
 
 import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"internal/testenv"
 	"io"
 	"os"
 	"reflect"
@@ -430,7 +429,7 @@ func BenchmarkUnmapped(b *testing.B) {
 func BenchmarkTypeFieldsCache(b *testing.B) {
 	b.ReportAllocs()
 	var maxTypes int = 1e6
-	if testenv.Builder() != "" {
+	if os.Getenv("GO_BUILDER_NAME") != "" {
 		maxTypes = 1e3 // restrict cache sizes on builders
 	}
 

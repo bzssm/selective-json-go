@@ -8,7 +8,7 @@
 //
 // See "JSON and Go" for an introduction to this package:
 // https://golang.org/doc/articles/json_and_go.html
-package json
+package selective_json_go
 
 import (
 	"bytes"
@@ -251,6 +251,9 @@ var hex = "0123456789abcdef"
 type encodeState struct {
 	bytes.Buffer // accumulated output
 
+	// scenario is the name of the scenario being encoded. It is used to select specific tag.
+	scenario string
+
 	// Keep track of what pointers we've seen in the current recursive call
 	// path, to avoid cycles that could lead to a stack overflow. Only do
 	// the relatively expensive map operations if ptrLevel is larger than
@@ -275,6 +278,10 @@ func newEncodeState() *encodeState {
 		return e
 	}
 	return &encodeState{ptrSeen: make(map[any]struct{})}
+}
+
+func (e *encodeState) setScenario(scenario string) {
+	e.scenario = scenario
 }
 
 // jsonError is an error wrapper type for internal use only.
@@ -695,6 +702,12 @@ FieldLoop:
 		if f.omitEmpty && isEmptyValue(fv) {
 			continue
 		}
+
+		// enable scenarios selective encoding, and skip the field if it is not in the scenarios
+		if e.scenario != "" && len(f.scenarios) != 0 && !containsIgnoreCase(f.scenarios, e.scenario) {
+			continue
+		}
+
 		e.WriteByte(next)
 		next = ','
 		if opts.escapeHTML {
@@ -1036,6 +1049,8 @@ type field struct {
 	nameNonEsc  string // `"` + name + `":`
 	nameEscHTML string // `"` + HTMLEscape(name) + `":`
 
+	scenarios []string
+
 	tag       bool
 	index     []int
 	typ       reflect.Type
@@ -1151,6 +1166,7 @@ func typeFields(t reflect.Type) structFields {
 					}
 					field := field{
 						name:      name,
+						scenarios: opts.Scenarios(),
 						tag:       tagged,
 						index:     index,
 						typ:       ft,
@@ -1280,4 +1296,13 @@ func mayAppendQuote(b []byte, quoted bool) []byte {
 		b = append(b, '"')
 	}
 	return b
+}
+
+func containsIgnoreCase(strs []string, s string) bool {
+	for _, str := range strs {
+		if strings.EqualFold(str, s) {
+			return true
+		}
+	}
+	return false
 }
